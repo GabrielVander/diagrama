@@ -7,9 +7,10 @@ pub struct ParseDiagramSourceUseCase<'a, T: DiagramParserAdapter> {
 }
 
 impl<'a, T: DiagramParserAdapter> ParseDiagramSourceUseCase<'a, T> {
-    fn execute(&self, source: &str) -> Result<Diagram, ParseDiagramSourceError> {
+    async fn execute(&self, source: &str) -> Result<Diagram, ParseDiagramSourceError> {
         self.diagram_parser
             .parse(source)
+            .await
             .map_err(|e| ParseDiagramSourceError::ParserError { context: e.clone() })
     }
 }
@@ -21,11 +22,10 @@ pub enum ParseDiagramSourceError {
 
 #[cfg(test)]
 mod test {
-    use std::{
-        cell::{Ref, RefCell},
-        collections::HashMap,
-    };
+    use std::collections::HashMap;
 
+    use async_lock::{Mutex, MutexGuard};
+    use async_trait::async_trait;
     use pretty_assertions::assert_eq;
 
     use crate::domain::{
@@ -43,54 +43,57 @@ mod test {
 
     #[test]
     fn should_delegate_parsing_to_parser() {
-        let source: &str = "Some source";
-        let diagram: Diagram = Diagram {
-            title: None,
-            kind: DiagramKind::Class,
-            elements: Vec::new(),
-            styles: HashMap::new(),
-        };
-        let parser: FakeDiagramParserAdapter =
-            FakeDiagramParserAdapter::returning(Ok(diagram.clone()));
-
-        let use_case: ParseDiagramSourceUseCase<FakeDiagramParserAdapter> =
-            ParseDiagramSourceUseCase {
-                diagram_parser: &parser,
+        smol::block_on(async {
+            let source: &str = "Some source";
+            let diagram: Diagram = Diagram {
+                title: None,
+                kind: DiagramKind::Class,
+                elements: Vec::new(),
+                styles: HashMap::new(),
             };
+            let parser: FakeDiagramParserAdapter =
+                FakeDiagramParserAdapter::returning(Ok(diagram.clone()));
 
-        let result: Result<Diagram, ParseDiagramSourceError> = use_case.execute(source);
+            let use_case: ParseDiagramSourceUseCase<FakeDiagramParserAdapter> =
+                ParseDiagramSourceUseCase {
+                    diagram_parser: &parser,
+                };
 
-        parser.assert_parse_called_with(source);
-        assert_eq!(Ok(diagram.clone()), result);
+            let result: Result<Diagram, ParseDiagramSourceError> = use_case.execute(source).await;
+
+            parser.assert_parse_called_with(source).await;
+            assert_eq!(Ok(diagram.clone()), result);
+        });
     }
 
     #[test]
     fn should_parse_parser_error() {
-        let source: &str = "Some other source";
-        let parser_error: String = "Some error".to_owned();
+        smol::block_on(async {
+            let source: &str = "Some other source";
+            let parser_error: String = "Some error".to_owned();
 
-        let parser: FakeDiagramParserAdapter =
-            FakeDiagramParserAdapter::returning(Err(parser_error.clone()));
+            let parser: FakeDiagramParserAdapter =
+                FakeDiagramParserAdapter::returning(Err(parser_error.clone()));
 
-        let use_case: ParseDiagramSourceUseCase<FakeDiagramParserAdapter> =
-            ParseDiagramSourceUseCase {
-                diagram_parser: &parser,
-            };
+            let use_case: ParseDiagramSourceUseCase<FakeDiagramParserAdapter> =
+                ParseDiagramSourceUseCase {
+                    diagram_parser: &parser,
+                };
 
-        let result: Result<Diagram, ParseDiagramSourceError> = use_case.execute(source);
+            let result: Result<Diagram, ParseDiagramSourceError> = use_case.execute(source).await;
 
-        parser.assert_parse_called_with(source);
-
-        assert_eq!(
-            Err(ParseDiagramSourceError::ParserError {
-                context: parser_error.clone()
-            }),
-            result
-        );
+            parser.assert_parse_called_with(source).await;
+            assert_eq!(
+                Err(ParseDiagramSourceError::ParserError {
+                    context: parser_error.clone()
+                }),
+                result
+            );
+        });
     }
 
     struct FakeDiagramParserAdapter {
-        last_parse_input: RefCell<Option<String>>,
+        last_parse_input: Mutex<Option<String>>,
 
         parse_result: Result<Diagram, String>,
     }
@@ -98,22 +101,24 @@ mod test {
     impl FakeDiagramParserAdapter {
         fn returning(parse_result: Result<Diagram, String>) -> Self {
             Self {
-                last_parse_input: RefCell::new(None),
+                last_parse_input: Mutex::new(None),
                 parse_result,
             }
         }
 
-        fn assert_parse_called_with(&self, expected: &str) {
-            let borrowed: Ref<Option<String>> = self.last_parse_input.borrow();
-            let actual: &String = borrowed.as_ref().expect("Parse method was never called");
+        async fn assert_parse_called_with(&self, expected: &str) {
+            let guard: MutexGuard<Option<String>> = self.last_parse_input.lock().await;
+            let actual: Option<&str> = guard.as_deref();
 
-            assert_eq!(expected, actual)
+            assert_eq!(Some(expected), actual)
         }
     }
 
+    #[async_trait]
     impl DiagramParserAdapter for FakeDiagramParserAdapter {
-        fn parse(&self, source: &str) -> Result<Diagram, String> {
-            *self.last_parse_input.borrow_mut() = Some(source.to_string());
+        async fn parse(&self, source: &str) -> Result<Diagram, String> {
+            let mut guard: MutexGuard<Option<String>> = self.last_parse_input.lock().await;
+            *guard = Some(source.to_string());
 
             self.parse_result.clone()
         }

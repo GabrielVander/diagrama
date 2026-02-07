@@ -3,4 +3,7 @@ members = ["crates/lib-core"]
 resolver = "3"
 
 [workspace.dependencies]
+async-trait = "0.1.89"
+smol = "2.0.2"
+async-lock = "3.4.2"
 pretty_assertions = "1.4.1"

@@ -1,5 +1,8 @@
+use async_trait::async_trait;
+
 use crate::domain::entities::diagram::Diagram;
 
+#[async_trait]
 pub trait DiagramParserAdapter {
-    fn parse(&self, source: &str) -> Result<Diagram, String>;
+    async fn parse(&self, source: &str) -> Result<Diagram, String>;
 }
