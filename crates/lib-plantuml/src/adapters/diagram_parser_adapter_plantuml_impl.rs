@@ -201,7 +201,7 @@ impl DiagramParserAdapter for DiagramParserAdapterPlantumlImpl {
 mod tests {
     use lib_core::domain::{
         adapters::diagram_parser_adapter::DiagramParserAdapter,
-        entities::diagram::{Diagram, Element, NodeType},
+        entities::diagram::{Diagram, Element},
     };
     use pretty_assertions::assert_eq;
 
