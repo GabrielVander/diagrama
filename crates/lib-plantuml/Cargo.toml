@@ -1,0 +1,14 @@
+[package]
+name = "lib-plantuml"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+lib-core = { version = "0.1.0", path = "../lib-core" }
+async-trait = { workspace = true }
+pest = "2.8.6"
+pest_derive = "2.8.6"
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }
+smol = { workspace = true }

@@ -1,0 +1,79 @@
+// Implicit rules for whitespace and comments
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+COMMENT = _{ "'" ~ (!"\n" ~ ANY)* ~ "\n" }
+
+// Entry point
+file = { SOI ~ start_uml? ~ statement* ~ end_uml? ~ EOI }
+
+start_uml = { "@startuml" }
+end_uml   = { "@enduml" }
+
+statement = {
+    package_def
+  | class_def
+  | relation_def
+  | note_def
+  | skinparam
+  | hide_show
+}
+
+// --- IDENTIFIERS ---
+// Alphanumeric + underscores, or quoted strings
+identifier = @{ ("\"" ~ inner_str ~ "\"") | (ASCII_ALPHANUMERIC | "_" | ".")+ }
+inner_str = @{ (!"\"" ~ ANY)* }
+label_text = @{ (!"\n" ~ ANY)* }
+
+// --- ENTITIES (Classes, Interfaces, etc) ---
+entity_kind = { 
+    "class" | "interface" | "abstract class" | "enum" | "component" | "actor" | "database" 
+}
+
+class_def = { 
+    entity_kind ~ identifier ~ (alias)? ~ (stereotype)? ~ (body_block | empty_decl) 
+}
+
+alias = { "as" ~ identifier }
+stereotype = { "<<" ~ (!">>" ~ ANY)* ~ ">>" }
+
+// Block: { field1 \n method() }
+body_block = { "{" ~ member* ~ "}" }
+empty_decl = { "" } 
+
+member = { !("}" | "end") ~ member_line }
+member_line = @{ (!("\n" | "}") ~ ANY)+ }
+
+// --- RELATIONSHIPS ---
+// Matches: A --> B : Label
+relation_def = { 
+    identifier ~ arrow ~ identifier ~ (":" ~ label_text)? 
+}
+
+// Captures the arrow shape (e.g. <|--, -->, ..>)
+arrow = { 
+    (arrow_head_left? ~ line_style ~ arrow_head_right?) |
+    (arrow_head_left ~ line_style) |
+    (line_style ~ arrow_head_right)
+}
+
+line_style = { ("-" | ".")+ ~ ("[" ~ (!"]" ~ ANY)* ~ "]")? ~ ("-" | ".")+ | ("-" | ".")+ }
+arrow_head_left = { "<|" | "<" | "*" | "o" | "+" | "#" | "x" | "}" }
+arrow_head_right = { "|>" | ">" | "*" | "o" | "+" | "#" | "x" | "{" }
+
+// --- PACKAGES / CLUSTERS ---
+package_kind = { "package" | "namespace" | "node" | "folder" | "rectangle" | "frame" }
+package_def = { 
+    package_kind ~ identifier ~ (alias)? ~ "{" ~ statement* ~ "}" 
+}
+
+// --- NOTES ---
+// Matches: note right of User: text or note "text" as N1
+note_def = { 
+    ("note" ~ position ~ "of" ~ identifier ~ ":" ~ label_text) |
+    ("note" ~ "\"" ~ inner_str ~ "\"" ~ "as" ~ identifier)
+}
+
+position = { "right" | "left" | "top" | "bottom" | "over" }
+
+// --- MISC ---
+skinparam = { "skinparam" ~ identifier ~ (!"\n" ~ ANY)* }
+hide_show = { ("hide" | "show") ~ (!"\n" ~ ANY)* }

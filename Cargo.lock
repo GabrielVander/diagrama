@@ -320,9 +320,12 @@ dependencies = [
 name = "lib-plantuml"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "lib-core",
  "pest",
  "pest_derive",
+ "pretty_assertions",
+ "smol",
 ]
 
 [[package]]
