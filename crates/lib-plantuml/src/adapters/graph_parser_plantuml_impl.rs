@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use async_trait::async_trait;
 use lib_core::domain::{
     adapters::graph_parser::{FrontendError, GraphParser},
@@ -14,7 +12,7 @@ use crate::infra::{
 pub struct GraphParserPlantumlImpl;
 
 impl GraphParserPlantumlImpl {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self
     }
 }

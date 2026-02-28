@@ -4,11 +4,11 @@ use crate::domain::{
 };
 
 pub struct ParseDiagramSourceUseCase<'a, T: GraphParser> {
-    diagram_parser: &'a T,
+    pub diagram_parser: &'a T,
 }
 
 impl<'a, T: GraphParser> ParseDiagramSourceUseCase<'a, T> {
-    async fn execute(&self, source: &str) -> Result<Graph, ParseDiagramSourceError> {
+    pub async fn execute(&self, source: &str) -> Result<Graph, ParseDiagramSourceError> {
         self.diagram_parser
             .parse(source)
             .await
@@ -25,8 +25,6 @@ pub enum ParseDiagramSourceError {
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashMap;
-
     use async_lock::{Mutex, MutexGuard};
     use async_trait::async_trait;
     use pretty_assertions::assert_eq;
