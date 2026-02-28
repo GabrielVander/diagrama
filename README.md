@@ -42,15 +42,18 @@ We implement a basic PlantUML parser currently supporting:
 
 Diagrama follows Uncle Bob's Clean Architecture. It uses the following layers:
 
-┌──────────────────────────────┐
-│         Entity Layer         │
-├──────────────────────────────┤
-│        Use Case Layer        │
-├──────────────────────────────┤
-         Adapters Layer        │
-├──────────────────────────────┤
-│     Infrastructure Layer     │
-└──────────────────────────────┘
+
+```text
+                                          ┌──────────────────────────────┐
+                                          │         Entity Layer         │
+                                          ├──────────────────────────────┤
+                                          │        Use Case Layer        │
+                                          ├──────────────────────────────┤
+                                          │        Adapters Layer        │
+                                          ├──────────────────────────────┤
+                                          │     Infrastructure Layer     │
+                                          └──────────────────────────────┘
+```
 
 - Entity Layer
   Business objects of the application. They encapsulate the most general and
