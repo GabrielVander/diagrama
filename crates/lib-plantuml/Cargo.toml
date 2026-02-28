@@ -8,6 +8,7 @@ lib-core = { version = "0.1.0", path = "../lib-core" }
 async-trait = { workspace = true }
 pest = "2.8.6"
 pest_derive = "2.8.6"
+uuid = { version = "1.4", features = ["v4", "fast-rng"] }
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }

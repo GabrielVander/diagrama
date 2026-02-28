@@ -1,0 +1,34 @@
+// Ignore whitespace and comments automatically
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+COMMENT    = _{ "'" ~ (!"\n" ~ ANY)* }
+
+diagram = { SOI ~ "@startuml" ~ element* ~ "@enduml" ~ EOI }
+
+element = _{ package | definition | relation }
+
+// Packages/Groups
+package = { "package" ~ string_literal ~ "{" ~ element* ~ "}" }
+
+// Node definitions (e.g., class "User" as U)
+definition = { node_keyword ~ string_or_ident ~ ("as" ~ identifier)? }
+node_keyword = { "class" | "interface" | "actor" | "component" | "database" }
+
+// Relations (e.g., User --> Profile)
+relation = { identifier ~ arrow ~ identifier ~ (":" ~ string_or_ident)? }
+arrow = { 
+    "--|>" | "<|--" | // Inheritance
+    "--*"  | "*--"  | // Composition
+    "--o"  | "o--"  | // Aggregation
+    "-->"  | "<--"  | // Directed Association
+    "--"              // Undirected
+}
+
+// Primitives
+identifier = @{ ASCII_ALPHANUMERIC+ }
+string_literal = ${ "\"" ~ inner ~ "\"" }
+inner = @{ char* }
+char = {
+    !("\"" | "\\") ~ ANY
+    | "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t")
+}
+string_or_ident = _{ string_literal | identifier }
