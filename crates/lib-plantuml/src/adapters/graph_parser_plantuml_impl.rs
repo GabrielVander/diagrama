@@ -1,7 +1,7 @@
 use async_trait::async_trait;
-use lib_core::domain::{
-    adapters::graph_parser::{FrontendError, GraphParser},
+use lib_core::{
     entities::graph::Graph,
+    use_cases::load_graph::{GraphReader, GraphReaderError},
 };
 
 use crate::infra::{
@@ -18,28 +18,28 @@ impl GraphParserPlantumlImpl {
 }
 
 #[async_trait]
-impl GraphParser for GraphParserPlantumlImpl {
-    async fn parse(&self, source: &str) -> Result<Graph, FrontendError> {
+impl GraphReader for GraphParserPlantumlImpl {
+    async fn read(&self, source: &str) -> Result<Graph, GraphReaderError> {
         parser::parse_plantuml(source)
-            .map_err(FrontendError::from)
+            .map_err(GraphReaderError::from)
             .map(|ast| transformer::GraphBuilder::new().build(ast))
     }
 }
 
-impl From<PlantUmlParseError> for FrontendError {
+impl From<PlantUmlParseError> for GraphReaderError {
     fn from(err: PlantUmlParseError) -> Self {
         match err {
             PlantUmlParseError::Syntax {
                 message,
                 line,
                 column,
-            } => FrontendError::Parse {
+            } => GraphReaderError::Parse {
                 source: "plantuml".into(),
                 message,
                 line,
                 column,
             },
-            PlantUmlParseError::Internal(msg) => FrontendError::Semantic {
+            PlantUmlParseError::Internal(msg) => GraphReaderError::Semantic {
                 source: "plantuml".into(),
                 message: msg,
             },
@@ -48,7 +48,7 @@ impl From<PlantUmlParseError> for FrontendError {
                 found,
                 line,
                 column,
-            } => FrontendError::Parse {
+            } => GraphReaderError::Parse {
                 source: "plantuml".into(),
                 message: format!("Unexpected token {}, expected {}", found, expected),
                 line,
@@ -61,13 +61,13 @@ impl From<PlantUmlParseError> for FrontendError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lib_core::domain::{
-        adapters::graph_parser::GraphParser,
+    use lib_core::{
         entities::{
             edge::{Edge, EdgeKind},
             group::Group,
             node::{Node, NodeKind},
         },
+        use_cases::load_graph::GraphReaderError,
     };
 
     #[test]
@@ -78,10 +78,10 @@ mod tests {
             column: 12,
         };
 
-        let frontend_err: FrontendError = plantuml_err.into();
+        let frontend_err: GraphReaderError = plantuml_err.into();
 
         match frontend_err {
-            FrontendError::Parse {
+            GraphReaderError::Parse {
                 source,
                 message,
                 line,
@@ -101,10 +101,10 @@ mod tests {
         let plantuml_err: PlantUmlParseError =
             PlantUmlParseError::Internal("Out of memory".to_string());
 
-        let frontend_err: FrontendError = plantuml_err.into();
+        let frontend_err: GraphReaderError = plantuml_err.into();
 
         match frontend_err {
-            FrontendError::Semantic { source, message } => {
+            GraphReaderError::Semantic { source, message } => {
                 assert_eq!(source, "plantuml");
                 assert_eq!(message, "Out of memory");
             }
@@ -121,10 +121,10 @@ mod tests {
             column: 20,
         };
 
-        let frontend_err: FrontendError = plantuml_err.into();
+        let frontend_err: GraphReaderError = plantuml_err.into();
 
         match frontend_err {
-            FrontendError::Parse {
+            GraphReaderError::Parse {
                 source,
                 message,
                 line,
@@ -150,8 +150,8 @@ mod tests {
             let valid_source: &str = "@startuml\nclass A\n@enduml";
             let invalid_source: &str = "INVALID_SYNTAX_12345";
 
-            let valid_result: Result<Graph, FrontendError> = parser.parse(valid_source).await;
-            let invalid_result: Result<Graph, FrontendError> = parser.parse(invalid_source).await;
+            let valid_result: Result<Graph, GraphReaderError> = parser.read(valid_source).await;
+            let invalid_result: Result<Graph, GraphReaderError> = parser.read(invalid_source).await;
 
             // We expect the valid source to at least not panic and return a parsed graph
             assert!(
@@ -182,7 +182,7 @@ mod tests {
             "#;
 
             let graph: Graph = parser
-                .parse(source)
+                .read(source)
                 .await
                 .expect("Failed to parse valid PlantUML");
 
@@ -220,7 +220,7 @@ mod tests {
             "#;
 
             let graph: Graph = parser
-                .parse(source)
+                .read(source)
                 .await
                 .expect("Failed to parse group PlantUML");
 
@@ -262,7 +262,7 @@ mod tests {
         "#;
 
             let graph: Graph = parser
-                .parse(source)
+                .read(source)
                 .await
                 .expect("Failed to parse implicit relation PlantUML");
 

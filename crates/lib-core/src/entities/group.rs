@@ -1,4 +1,4 @@
-use crate::domain::entities::id::Id;
+use crate::entities::id::Id;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Group {

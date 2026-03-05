@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::domain::entities::{edge::Edge, group::Group, id::Id, node::Node, style::Style};
+use crate::entities::{edge::Edge, group::Group, id::Id, node::Node, style::Style};
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Graph {

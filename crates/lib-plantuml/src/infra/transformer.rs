@@ -1,4 +1,4 @@
-use lib_core::domain::entities::{
+use lib_core::entities::{
     edge::{Edge, EdgeKind},
     graph::Graph,
     group::Group,

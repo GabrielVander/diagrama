@@ -1,1 +1,2 @@
-pub mod domain;
+pub mod entities;
+pub mod use_cases;

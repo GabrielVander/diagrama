@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::domain::entities::id::Id;
+use crate::entities::id::Id;
 
 pub type StyleRef = Option<Id>;
 

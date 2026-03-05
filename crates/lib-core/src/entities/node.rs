@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::domain::entities::{id::Id, style::StyleRef, value::Value};
+use crate::entities::{id::Id, style::StyleRef, value::Value};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Node {
