@@ -1,11 +1,11 @@
 use std::io::{self, Read};
 
-use lib_core::domain::use_cases::parse_diagram_source_use_case::ParseDiagramSourceUseCase;
+use lib_core::use_cases::load_graph::LoadGraph;
 use lib_plantuml::adapters::graph_parser_plantuml_impl::GraphParserPlantumlImpl;
 
 fn main() {
     let adapter: GraphParserPlantumlImpl = GraphParserPlantumlImpl::new();
-    let use_case: ParseDiagramSourceUseCase<GraphParserPlantumlImpl> = ParseDiagramSourceUseCase {
+    let use_case: LoadGraph<GraphParserPlantumlImpl> = LoadGraph {
         diagram_parser: &adapter,
     };
 

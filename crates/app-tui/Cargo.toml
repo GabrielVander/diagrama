@@ -1,0 +1,12 @@
+[package]
+name = "app-tui"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+lib-core = { version = "0.1.0", path = "../lib-core" }
+lib-plantuml = { version = "0.1.0", path = "../lib-plantuml" }
+smol = { workspace = true }
+ratatui = "0.30"
+crossterm = "0.29"
+edtui = "0.11.1"
