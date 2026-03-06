@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use lib_core::{
     entities::graph::Graph,
-    use_cases::load_graph::{GraphGateway, GraphGatewayError},
+    gateways::graph_gateway::{GraphGateway, GraphGatewayError},
 };
 
 use crate::infra::{
@@ -9,18 +9,19 @@ use crate::infra::{
     transformer,
 };
 
-pub struct GraphParserPlantumlImpl;
+#[derive(Default)]
+pub struct PlantUmlGraphGateway;
 
-impl GraphParserPlantumlImpl {
+impl PlantUmlGraphGateway {
     pub fn new() -> Self {
         Self
     }
 }
 
 #[async_trait]
-impl GraphGateway for GraphParserPlantumlImpl {
-    async fn read_graph_from_raw_input(&self, source: &str) -> Result<Graph, GraphGatewayError> {
-        parser::parse_plantuml(source)
+impl GraphGateway for PlantUmlGraphGateway {
+    async fn read_graph_from_raw_input(&self, input: &str) -> Result<Graph, GraphGatewayError> {
+        parser::parse_plantuml(input)
             .map_err(GraphGatewayError::from)
             .map(|ast| transformer::GraphBuilder::new().build(ast))
     }
@@ -61,13 +62,10 @@ impl From<PlantUmlParseError> for GraphGatewayError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lib_core::{
-        entities::{
-            edge::{Edge, EdgeKind},
-            group::Group,
-            node::{Node, NodeKind},
-        },
-        use_cases::load_graph::GraphGatewayError,
+    use lib_core::entities::{
+        edge::{Edge, EdgeKind},
+        group::Group,
+        node::{Node, NodeKind},
     };
 
     #[test]
@@ -142,7 +140,7 @@ mod tests {
     #[test]
     fn test_parse_black_box_wiring() {
         smol::block_on(async {
-            let parser: GraphParserPlantumlImpl = GraphParserPlantumlImpl::new();
+            let parser: PlantUmlGraphGateway = PlantUmlGraphGateway::new();
 
             // We use a basic PlantUML string. We aren't testing the actual AST building here
             // (that belongs in transformer.rs and parser.rs tests), just that the async
@@ -173,7 +171,7 @@ mod tests {
     #[test]
     fn test_parse_basic_nodes_and_relations() {
         smol::block_on(async {
-            let parser: GraphParserPlantumlImpl = GraphParserPlantumlImpl::new();
+            let parser: PlantUmlGraphGateway = PlantUmlGraphGateway::new();
             let source: &str = r#"
             @startuml
             class "Customer" as C
@@ -211,7 +209,7 @@ mod tests {
     #[test]
     fn test_parse_groups_and_nesting() {
         smol::block_on(async {
-            let parser: GraphParserPlantumlImpl = GraphParserPlantumlImpl::new();
+            let parser: PlantUmlGraphGateway = PlantUmlGraphGateway::new();
             let source: &'static str = r#"
             @startuml
             package "Backend System" {
@@ -254,7 +252,7 @@ mod tests {
     #[test]
     fn test_implicit_node_creation_from_relations() {
         smol::block_on(async {
-            let parser: GraphParserPlantumlImpl = GraphParserPlantumlImpl::new();
+            let parser: PlantUmlGraphGateway = PlantUmlGraphGateway::new();
             // Here, A and B are never explicitly defined with "class" or "component",
             // they only appear in a relation. The transformer should create them implicitly.
             let source: &str = r#"

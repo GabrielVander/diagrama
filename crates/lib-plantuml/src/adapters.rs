@@ -1,1 +1,1 @@
-pub mod graph_parser_plantuml_impl;
+pub mod plant_uml_graph_gateway;
