@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use lib_core::{
+    adapters::graph_gateway::{GraphGateway, GraphGatewayError},
     entities::graph::Graph,
-    gateways::graph_gateway::{GraphGateway, GraphGatewayError},
 };
 
 use crate::infra::{

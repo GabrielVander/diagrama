@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 
 use crate::{
+    adapters::graph_gateway::{GraphGateway, GraphGatewayError},
     entities::graph::Graph,
-    gateways::graph_gateway::{GraphGateway, GraphGatewayError},
 };
 
 #[async_trait]
