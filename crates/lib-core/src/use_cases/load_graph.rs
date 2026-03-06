@@ -1,68 +1,52 @@
 use async_trait::async_trait;
 
-use crate::entities::graph::Graph;
+use crate::{
+    entities::graph::Graph,
+    gateways::graph_gateway::{GraphGateway, GraphGatewayError},
+};
 
 #[async_trait]
-pub trait GraphReader {
-    async fn read(&self, source: &str) -> Result<Graph, GraphReaderError>;
+pub trait LoadGraph {
+    async fn execute(&self, input: &str) -> Result<Graph, String>;
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum GraphReaderError {
-    Parse {
-        source: String,
-        message: String,
-        line: usize,
-        column: usize,
-    },
-    Semantic {
-        source: String,
-        message: String,
-    },
-}
-
-pub struct LoadGraph<'a, T: GraphReader> {
+pub struct LoadGraphImpl<'a, T: GraphGateway + Sync> {
     pub diagram_parser: &'a T,
 }
 
-impl<'a, T: GraphReader> LoadGraph<'a, T> {
-    pub async fn execute(&self, source: &str) -> Result<Graph, GraphLoadingError> {
+#[async_trait]
+impl<'a, T: GraphGateway + Sync> LoadGraph for LoadGraphImpl<'a, T> {
+    async fn execute(&self, source: &str) -> Result<Graph, String> {
         self.diagram_parser
-            .read(source)
+            .read_graph_from_raw_input(source)
             .await
-            .map_err(GraphLoadingError::from)
+            .map_err(String::from)
     }
 }
 
-impl From<GraphReaderError> for GraphLoadingError {
-    fn from(value: GraphReaderError) -> Self {
+impl From<GraphGatewayError> for String {
+    fn from(value: GraphGatewayError) -> Self {
         match value {
-            GraphReaderError::Parse {
+            GraphGatewayError::Parse {
                 source,
                 message,
                 line,
                 column,
-            } => Self(format!(
-                "[{}:{}:{}] Parse Error: {}",
-                source, line, column, message
-            )),
-            GraphReaderError::Semantic { source, message } => {
-                Self(format!("[{}] Semantic Error: {}", source, message))
+            } => format!("[{}:{}:{}] Parse Error: {}", source, line, column, message),
+            GraphGatewayError::Semantic { source, message } => {
+                format!("[{}] Semantic Error: {}", source, message)
             }
         }
     }
 }
-#[derive(Debug, PartialEq)]
-pub struct GraphLoadingError(String);
 
 #[cfg(test)]
 mod test {
-    use async_lock::{Mutex, MutexGuard};
     use async_trait::async_trait;
 
     use crate::{
         entities::graph::Graph,
-        use_cases::load_graph::{GraphLoadingError, GraphReader, GraphReaderError, LoadGraph},
+        use_cases::load_graph::{GraphGateway, GraphGatewayError, LoadGraph, LoadGraphImpl},
     };
 
     #[test]
@@ -72,11 +56,11 @@ mod test {
             let diagram: Graph = Graph::default();
             let parser: FakeGraphReader = FakeGraphReader::returning(Ok(diagram.clone()));
 
-            let use_case: LoadGraph<FakeGraphReader> = LoadGraph {
+            let use_case: LoadGraphImpl<FakeGraphReader> = LoadGraphImpl {
                 diagram_parser: &parser,
             };
 
-            let result: Result<Graph, GraphLoadingError> = use_case.execute(source).await;
+            let result: Result<Graph, String> = use_case.execute(source).await;
 
             assert_eq!(Ok(diagram.clone()), result);
         });
@@ -86,7 +70,7 @@ mod test {
     fn should_parse_parser_error() {
         smol::block_on(async {
             let source: &str = "Some other source";
-            let parser_error: GraphReaderError = GraphReaderError::Parse {
+            let parser_error: GraphGatewayError = GraphGatewayError::Parse {
                 source: "fake".to_owned(),
                 message: "dummy error".to_owned(),
                 line: 3,
@@ -95,42 +79,35 @@ mod test {
 
             let parser: FakeGraphReader = FakeGraphReader::returning(Err(parser_error.clone()));
 
-            let use_case: LoadGraph<FakeGraphReader> = LoadGraph {
+            let use_case: LoadGraphImpl<FakeGraphReader> = LoadGraphImpl {
                 diagram_parser: &parser,
             };
 
-            let result: Result<Graph, GraphLoadingError> = use_case.execute(source).await;
+            let result: Result<Graph, String> = use_case.execute(source).await;
 
             assert_eq!(
-                Err(GraphLoadingError(
-                    "[fake:3:33] Parse Error: dummy error".to_owned()
-                )),
+                Err("[fake:3:33] Parse Error: dummy error".to_owned()),
                 result
             );
         });
     }
 
     struct FakeGraphReader {
-        last_parse_input: Mutex<Option<String>>,
-
-        parse_result: Result<Graph, GraphReaderError>,
+        parse_result: Result<Graph, GraphGatewayError>,
     }
 
     impl FakeGraphReader {
-        fn returning(parse_result: Result<Graph, GraphReaderError>) -> Self {
-            Self {
-                last_parse_input: Mutex::new(None),
-                parse_result,
-            }
+        fn returning(parse_result: Result<Graph, GraphGatewayError>) -> Self {
+            Self { parse_result }
         }
     }
 
     #[async_trait]
-    impl GraphReader for FakeGraphReader {
-        async fn read(&self, source: &str) -> Result<Graph, GraphReaderError> {
-            let mut guard: MutexGuard<Option<String>> = self.last_parse_input.lock().await;
-            *guard = Some(source.to_string());
-
+    impl GraphGateway for FakeGraphReader {
+        async fn read_graph_from_raw_input(
+            &self,
+            _source: &str,
+        ) -> Result<Graph, GraphGatewayError> {
             self.parse_result.clone()
         }
     }

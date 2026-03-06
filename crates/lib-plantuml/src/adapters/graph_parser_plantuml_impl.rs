@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use lib_core::{
     entities::graph::Graph,
-    use_cases::load_graph::{GraphReader, GraphReaderError},
+    use_cases::load_graph::{GraphGateway, GraphGatewayError},
 };
 
 use crate::infra::{
@@ -18,28 +18,28 @@ impl GraphParserPlantumlImpl {
 }
 
 #[async_trait]
-impl GraphReader for GraphParserPlantumlImpl {
-    async fn read(&self, source: &str) -> Result<Graph, GraphReaderError> {
+impl GraphGateway for GraphParserPlantumlImpl {
+    async fn read_graph_from_raw_input(&self, source: &str) -> Result<Graph, GraphGatewayError> {
         parser::parse_plantuml(source)
-            .map_err(GraphReaderError::from)
+            .map_err(GraphGatewayError::from)
             .map(|ast| transformer::GraphBuilder::new().build(ast))
     }
 }
 
-impl From<PlantUmlParseError> for GraphReaderError {
+impl From<PlantUmlParseError> for GraphGatewayError {
     fn from(err: PlantUmlParseError) -> Self {
         match err {
             PlantUmlParseError::Syntax {
                 message,
                 line,
                 column,
-            } => GraphReaderError::Parse {
+            } => GraphGatewayError::Parse {
                 source: "plantuml".into(),
                 message,
                 line,
                 column,
             },
-            PlantUmlParseError::Internal(msg) => GraphReaderError::Semantic {
+            PlantUmlParseError::Internal(msg) => GraphGatewayError::Semantic {
                 source: "plantuml".into(),
                 message: msg,
             },
@@ -48,7 +48,7 @@ impl From<PlantUmlParseError> for GraphReaderError {
                 found,
                 line,
                 column,
-            } => GraphReaderError::Parse {
+            } => GraphGatewayError::Parse {
                 source: "plantuml".into(),
                 message: format!("Unexpected token {}, expected {}", found, expected),
                 line,
@@ -67,7 +67,7 @@ mod tests {
             group::Group,
             node::{Node, NodeKind},
         },
-        use_cases::load_graph::GraphReaderError,
+        use_cases::load_graph::GraphGatewayError,
     };
 
     #[test]
@@ -78,10 +78,10 @@ mod tests {
             column: 12,
         };
 
-        let frontend_err: GraphReaderError = plantuml_err.into();
+        let frontend_err: GraphGatewayError = plantuml_err.into();
 
         match frontend_err {
-            GraphReaderError::Parse {
+            GraphGatewayError::Parse {
                 source,
                 message,
                 line,
@@ -101,10 +101,10 @@ mod tests {
         let plantuml_err: PlantUmlParseError =
             PlantUmlParseError::Internal("Out of memory".to_string());
 
-        let frontend_err: GraphReaderError = plantuml_err.into();
+        let frontend_err: GraphGatewayError = plantuml_err.into();
 
         match frontend_err {
-            GraphReaderError::Semantic { source, message } => {
+            GraphGatewayError::Semantic { source, message } => {
                 assert_eq!(source, "plantuml");
                 assert_eq!(message, "Out of memory");
             }
@@ -121,10 +121,10 @@ mod tests {
             column: 20,
         };
 
-        let frontend_err: GraphReaderError = plantuml_err.into();
+        let frontend_err: GraphGatewayError = plantuml_err.into();
 
         match frontend_err {
-            GraphReaderError::Parse {
+            GraphGatewayError::Parse {
                 source,
                 message,
                 line,
@@ -150,8 +150,10 @@ mod tests {
             let valid_source: &str = "@startuml\nclass A\n@enduml";
             let invalid_source: &str = "INVALID_SYNTAX_12345";
 
-            let valid_result: Result<Graph, GraphReaderError> = parser.read(valid_source).await;
-            let invalid_result: Result<Graph, GraphReaderError> = parser.read(invalid_source).await;
+            let valid_result: Result<Graph, GraphGatewayError> =
+                parser.read_graph_from_raw_input(valid_source).await;
+            let invalid_result: Result<Graph, GraphGatewayError> =
+                parser.read_graph_from_raw_input(invalid_source).await;
 
             // We expect the valid source to at least not panic and return a parsed graph
             assert!(
@@ -182,7 +184,7 @@ mod tests {
             "#;
 
             let graph: Graph = parser
-                .read(source)
+                .read_graph_from_raw_input(source)
                 .await
                 .expect("Failed to parse valid PlantUML");
 
@@ -220,7 +222,7 @@ mod tests {
             "#;
 
             let graph: Graph = parser
-                .read(source)
+                .read_graph_from_raw_input(source)
                 .await
                 .expect("Failed to parse group PlantUML");
 
@@ -262,7 +264,7 @@ mod tests {
         "#;
 
             let graph: Graph = parser
-                .read(source)
+                .read_graph_from_raw_input(source)
                 .await
                 .expect("Failed to parse implicit relation PlantUML");
 
