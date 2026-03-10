@@ -1,22 +1,14 @@
-use async_trait::async_trait;
-
 use crate::{
     adapters::graph_gateway::{GraphGateway, GraphGatewayError},
     entities::graph::Graph,
 };
 
-#[async_trait]
-pub trait LoadGraph {
-    async fn execute(&self, input: &str) -> Result<Graph, String>;
-}
-
-pub struct LoadGraphImpl<'a, T: GraphGateway + Sync> {
+pub struct LoadGraph<'a, T: GraphGateway + Sync> {
     pub diagram_parser: &'a T,
 }
 
-#[async_trait]
-impl<'a, T: GraphGateway + Sync> LoadGraph for LoadGraphImpl<'a, T> {
-    async fn execute(&self, source: &str) -> Result<Graph, String> {
+impl<'a, T: GraphGateway + Sync> LoadGraph<'a, T> {
+    pub async fn execute(&self, source: &str) -> Result<Graph, String> {
         self.diagram_parser
             .read_graph_from_raw_input(source)
             .await
@@ -46,7 +38,7 @@ mod test {
 
     use crate::{
         entities::graph::Graph,
-        use_cases::load_graph::{GraphGateway, GraphGatewayError, LoadGraph, LoadGraphImpl},
+        use_cases::load_graph::{GraphGateway, GraphGatewayError, LoadGraph},
     };
 
     #[test]
@@ -56,7 +48,7 @@ mod test {
             let diagram: Graph = Graph::default();
             let parser: FakeGraphReader = FakeGraphReader::returning(Ok(diagram.clone()));
 
-            let use_case: LoadGraphImpl<FakeGraphReader> = LoadGraphImpl {
+            let use_case: LoadGraph<FakeGraphReader> = LoadGraph {
                 diagram_parser: &parser,
             };
 
@@ -79,7 +71,7 @@ mod test {
 
             let parser: FakeGraphReader = FakeGraphReader::returning(Err(parser_error.clone()));
 
-            let use_case: LoadGraphImpl<FakeGraphReader> = LoadGraphImpl {
+            let use_case: LoadGraph<FakeGraphReader> = LoadGraph {
                 diagram_parser: &parser,
             };
 
