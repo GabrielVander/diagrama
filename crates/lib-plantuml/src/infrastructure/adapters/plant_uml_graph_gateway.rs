@@ -4,7 +4,7 @@ use lib_core::{
     entities::graph::Graph,
 };
 
-use crate::infra::{
+use crate::infrastructure::{
     parser::{self, PlantUmlParseError},
     transformer,
 };
@@ -61,11 +61,18 @@ impl From<PlantUmlParseError> for GraphGatewayError {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use lib_core::entities::{
-        edge::{Edge, EdgeKind},
-        group::Group,
-        node::{Node, NodeKind},
+    use lib_core::{
+        adapters::graph_gateway::{GraphGateway, GraphGatewayError},
+        entities::{
+            edge::{Edge, EdgeKind},
+            graph::Graph,
+            group::Group,
+            node::{Node, NodeKind},
+        },
+    };
+
+    use crate::infrastructure::{
+        adapters::plant_uml_graph_gateway::PlantUmlGraphGateway, parser::PlantUmlParseError,
     };
 
     #[test]

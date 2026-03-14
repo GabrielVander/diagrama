@@ -72,12 +72,11 @@ to use their enterprise wide business rules to achieve the goals of the use case
 convert data from the format most convenient for the use cases and entities, to
 the format most convenient for some external agency. Also in this layer is any
 other adapter necessary to convert data from some external form, such as an
-external service, to the internal form used by the use cases and entities. This
-is where Gateways implementations reside
+external service, to the internal form used by the use cases and entities
 
 - Infrastructure Layer
   Frameworks and Drivers. The outermost layer is generally composed of
-frameworks and tools
+frameworks and tools. This is where Adapters implementations reside
 
 ### Vertical Slicing
 
@@ -87,7 +86,8 @@ crates orchestrated via cargo workspace), currently:
 - lib-core
   - Contains the core of the application, typically it's where most entities
   and use cases definitions reside (Entity and Use Case Layers)
+
 - lib-plant_uml
   - Contains PlantUML-specific code. It's where the use cases' gateways are
-  implemented with PlantUML specifics (Adapters Layer). It's also where the
-  language parsing logic is implemented (Infrastructure Layer)
+  implemented with PlantUML specifics. It's also where the
+  language parsing logic is implemented

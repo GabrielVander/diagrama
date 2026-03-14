@@ -1,10 +1,10 @@
 use pest::Parser;
 use pest_derive::Parser;
 
-use crate::infra::models::ast_node::AstNode;
+use crate::infrastructure::models::ast_node::AstNode;
 
 #[derive(Parser)]
-#[grammar = "infra/plantuml.pest"]
+#[grammar = "infrastructure/plantuml.pest"]
 pub struct PlantUmlParser;
 
 pub fn parse_plantuml(input: &str) -> Result<Vec<AstNode>, PlantUmlParseError> {

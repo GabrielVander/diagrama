@@ -8,7 +8,7 @@ use lib_core::entities::{
 use std::collections::HashMap;
 use uuid::Uuid;
 
-use crate::infra::models::ast_node::AstNode;
+use crate::infrastructure::models::ast_node::AstNode;
 
 pub struct GraphBuilder {
     graph: Graph,

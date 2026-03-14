@@ -1,2 +1,1 @@
-pub mod adapters;
-pub(crate) mod infra;
+pub(crate) mod infrastructure;
