@@ -1,14 +1,24 @@
+use std::sync::Arc;
+
+use async_trait::async_trait;
+
 use crate::{
     adapters::graph_gateway::{GraphGateway, GraphGatewayError},
     entities::graph::Graph,
 };
 
-pub struct LoadGraph<'a, T: GraphGateway + Sync> {
-    pub diagram_parser: &'a T,
+#[async_trait]
+pub trait LoadGraphUseCase {
+    async fn execute(&self, source: &str) -> Result<Graph, String>;
 }
 
-impl<'a, T: GraphGateway + Sync> LoadGraph<'a, T> {
-    pub async fn execute(&self, source: &str) -> Result<Graph, String> {
+pub struct LoadGraph<T: GraphGateway> {
+    pub diagram_parser: Arc<T>,
+}
+
+#[async_trait]
+impl<T: GraphGateway + Sync + Send + 'static> LoadGraphUseCase for LoadGraph<T> {
+    async fn execute(&self, source: &str) -> Result<Graph, String> {
         self.diagram_parser
             .read_graph_from_raw_input(source)
             .await
@@ -34,11 +44,13 @@ impl From<GraphGatewayError> for String {
 
 #[cfg(test)]
 mod test {
+    use std::sync::Arc;
+
     use async_trait::async_trait;
 
     use crate::{
         entities::graph::Graph,
-        use_cases::load_graph::{GraphGateway, GraphGatewayError, LoadGraph},
+        use_cases::load_graph::{GraphGateway, GraphGatewayError, LoadGraph, LoadGraphUseCase},
     };
 
     #[test]
@@ -46,10 +58,11 @@ mod test {
         smol::block_on(async {
             let source: &str = "Some source";
             let diagram: Graph = Graph::default();
-            let parser: FakeGraphReader = FakeGraphReader::returning(Ok(diagram.clone()));
+            let parser: Arc<FakeGraphReader> =
+                Arc::new(FakeGraphReader::returning(Ok(diagram.clone())));
 
             let use_case: LoadGraph<FakeGraphReader> = LoadGraph {
-                diagram_parser: &parser,
+                diagram_parser: parser.clone(),
             };
 
             let result: Result<Graph, String> = use_case.execute(source).await;
@@ -69,10 +82,11 @@ mod test {
                 column: 33,
             };
 
-            let parser: FakeGraphReader = FakeGraphReader::returning(Err(parser_error.clone()));
+            let parser: Arc<FakeGraphReader> =
+                Arc::new(FakeGraphReader::returning(Err(parser_error.clone())));
 
             let use_case: LoadGraph<FakeGraphReader> = LoadGraph {
-                diagram_parser: &parser,
+                diagram_parser: parser.clone(),
             };
 
             let result: Result<Graph, String> = use_case.execute(source).await;
