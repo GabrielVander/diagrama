@@ -1,6 +1,6 @@
 [workspace]
 members = [
-  "crates/app-test-plantuml",
+  # "crates/app-test-plantuml",
   "crates/lib-core",
   "crates/lib-plantuml",
   "crates/app-tui",

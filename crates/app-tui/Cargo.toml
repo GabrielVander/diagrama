@@ -10,3 +10,6 @@ smol = { workspace = true }
 ratatui = "0.30"
 crossterm = "0.29"
 edtui = "0.11.1"
+
+[dev-dependencies]
+async-trait = { workspace = true }
