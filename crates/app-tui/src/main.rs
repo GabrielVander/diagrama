@@ -12,9 +12,8 @@ mod ascii_renderer;
 
 fn main() {
     let plantuml_graph_gateway: Arc<PlantUmlGraphGateway> = Arc::new(PlantUmlGraphGateway::new());
-    let load_plantuml_graph: Arc<LoadGraph<PlantUmlGraphGateway>> = Arc::new(LoadGraph {
-        diagram_parser: plantuml_graph_gateway.clone(),
-    });
+    let load_plantuml_graph: Arc<LoadGraph<PlantUmlGraphGateway>> =
+        Arc::new(LoadGraph::new(plantuml_graph_gateway.clone()));
     let presenter: Arc<TuiPresenterImpl<LoadGraph<PlantUmlGraphGateway>>> =
         Arc::new(TuiPresenterImpl::new(load_plantuml_graph.clone()));
 
